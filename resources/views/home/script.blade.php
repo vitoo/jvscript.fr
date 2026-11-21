@@ -35,7 +35,7 @@
                 <?php
                 $autor = "";
                 if (null != $script->user_id)
-                    $autor = $script->user()->first()->name;
+                    $autor = $script->user->name;
                 elseif ($script->autor != null)
                     $autor = $script->autor;
 
@@ -45,6 +45,7 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
+                    @include('home.badges', ['item' => $script])
                     <span class=" label label-script">Script</span>
                 </p>
 
@@ -94,6 +95,7 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
+                    @include('home.badges', ['item' => $script])
                     <span class=" label label-script">Script</span>
                 </p>
             </div>

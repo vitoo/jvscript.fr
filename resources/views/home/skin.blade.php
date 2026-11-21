@@ -26,7 +26,7 @@
                 <?php
                 $autor = "";
                 if (null != $skin->user_id)
-                    $autor = $skin->user()->first()->name;
+                    $autor = $skin->user->name;
                 elseif ($skin->autor != null)
                     $autor = $skin->autor;
 
@@ -36,6 +36,7 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
+                    @include('home.badges', ['item' => $skin])
                     <span class=" label label-skin">Skin</span>
                 </p>
                 <p class="desc">{{\Illuminate\Support\Str::limit($skin->description,350)}}</p>
@@ -75,6 +76,7 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
+                    @include('home.badges', ['item' => $skin])
                     <span class=" label label-skin">Skin</span>
                 </p>
             </div>

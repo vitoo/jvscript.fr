@@ -22,9 +22,10 @@
         $('.skin').show();
         var target = $(this).attr('target');
 
-        $('[target="' + target + '"]').addClass('active');
-        $('[target!="' + target + '"]').removeClass('active');
-        
+        $('.filter[target="' + target + '"]').addClass('active');
+        $('.filter[target!="' + target + '"]').removeClass('active');
+        $('#titre-liste span').text(target == 'skin' ? 'Skins' : 'Scripts');
+
         //or filter category
         scriptList.filter(function (item) {
             if (item.values().category == target) {
@@ -111,11 +112,27 @@
     $(function () {
         $('[data-toggle="tooltip"]').tooltip();
         $('.skin').hide();     
-        $('[target="script"]').addClass('active');   
+        $('.filter[target="script"]').addClass('active');
     });
 
 </script>
 @endsection
+
+<div class="row">
+
+    @include('home.news')
+
+</div>
+
+@if($latestScripts->isNotEmpty())
+<hr class="separation-nouveautes">
+@endif
+
+<div class="row">
+    <div class="col-xs-12">
+        <h3 id="titre-liste">🔥 <span>Scripts</span> populaires</h3>
+    </div>
+</div>
 
 <div class="row">
 

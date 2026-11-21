@@ -18,16 +18,35 @@ class UserController extends Controller
     {
         $keyword = $keyword == null ? '' : $keyword;
         $scripts = Script::where('status', 1)
+            ->with('user')
             ->orderBy('pinned', 'desc')
             ->orderBy('install_count', 'desc')
             ->get();
-        $skins = Skin::where('status', 1)->get();
+        $skins = Skin::where('status', 1)->with('user')->get();
+
+        $latestScripts = Script::where('status', 1)
+            ->with('user')
+            ->latest()
+            ->take(Script::HOME_NEWS_COUNT)
+            ->get();
+        $updatedScripts = Script::where('status', 1)
+            ->with('user')
+            ->whereNotNull('last_update')
+            ->whereNotIn('id', $latestScripts->pluck('id'))
+            ->orderBy('last_update', 'desc')
+            ->take(Script::HOME_NEWS_COUNT)
+            ->get();
 
         $collection = collect([$scripts, $skins]);
         $collapsed = $collection->collapse();
         $scripts = $collapsed->all();
 
-        return view('index', ['scripts' => $scripts, 'keyword' => $keyword]);
+        return view('index', [
+            'scripts' => $scripts,
+            'keyword' => $keyword,
+            'latestScripts' => $latestScripts,
+            'updatedScripts' => $updatedScripts,
+        ]);
     }
 
     /**

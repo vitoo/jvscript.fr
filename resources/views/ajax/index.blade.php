@@ -56,7 +56,7 @@
                 $item = "skin";
                 $skin = $script;
             }
-            $autor = (null != $script->user_id ) ? $script->user()->first()->name : $script->autor;
+            $autor = (null != $script->user_id ) ? $script->user->name : $script->autor;
             $i++;
             $lazy = $i > 8 ? true : false;
             ?>
