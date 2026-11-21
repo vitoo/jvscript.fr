@@ -6,6 +6,7 @@ use App;
 use App\Helpers\ParsedownExtended;
 use App\Http\Requests\StoreScript;
 use App\Http\Requests\UpdateScriptRequest;
+use App\Lib\IpReputation;
 use App\Model\History;
 use App\Model\Script;
 use App\Model\User;
@@ -143,18 +144,37 @@ class ScriptController extends Controller
     }
 
     /**
-     * Install : count & redirect
+     * IP du visiteur : le site est derrière Cloudflare, qui fournit l'IP réelle dans CF-Connecting-IP
+     * (contrairement à X-Forwarded-For, que le client peut remplir lui-même).
      */
-    public function install($slug, Request $request)
+    protected function clientIp(Request $request): string
+    {
+        return $request->header('CF-Connecting-IP') ?? $request->ip();
+    }
+
+    /**
+     * Compte une installation : une seule fois par IP, et seulement pour une IP d'utilisateur (pas VPN ni serveur)
+     */
+    protected function countInstall(Script $item, string $ip, IpReputation $ipReputation): void
+    {
+        $what = $this->modelName.'_'.$item->slug;
+        $alreadyCounted = History::where(['ip' => $ip, 'what' => $what, 'action' => 'install'])->exists();
+        if ($alreadyCounted || ! $ipReputation->isRealUser($ip)) {
+            return;
+        }
+
+        History::create(['ip' => $ip, 'what' => $what, 'action' => 'install']);
+        $item->increment('install_count');
+    }
+
+    /**
+     * Install : redirect, then count once the response has been sent (the IP check calls an external API)
+     */
+    public function install($slug, Request $request, IpReputation $ipReputation)
     {
         $item = $this->model::where('slug', $slug)->firstOrFail();
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? request()->ip();
-        $history = History::where(['ip' => $ip, 'what' => $this->modelName.'_'.$slug, 'action' => 'install']);
-        if ($history->count() == 0) {
-            History::create(['ip' => $ip, 'what' => $this->modelName.'_'.$slug, 'action' => 'install']);
-            $item->install_count++;
-            $item->save();
-        }
+        $ip = $this->clientIp($request);
+        defer(fn () => rescue(fn () => $this->countInstall($item, $ip, $ipReputation)));
 
         return "<html>
         <head><meta http-equiv='refresh' content='0;url=$item->url'>
@@ -175,7 +195,7 @@ class ScriptController extends Controller
         $note = intval($note);
         if ($note > 0 && $note <= 5) {
             $item = $this->model::where('slug', $slug)->firstOrFail();
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? request()->ip();
+            $ip = $this->clientIp($request);
             // if no history note_count +1
             $history = History::where(['ip' => $ip, 'what' => $this->modelName.'_'.$slug, 'action' => 'note']);
             if ($history->count() == 0) {

@@ -195,11 +195,12 @@ class skinsTest extends BrowserKitTestCase
             ->seePageIs('/skin/nom-du-skin')
             ->see('1 votes');
 
-        $this->call('GET', '/skin/install/nom-du-skin');
+        \Illuminate\Support\Facades\Http::fake(['proxycheck.io/*' => ['status' => 'ok', '93.31.164.209' => ['proxy' => 'no', 'type' => 'Residential']]]);
+        $this->call('GET', '/skin/install/nom-du-skin', [], [], [], ['HTTP_CF_CONNECTING_IP' => '93.31.164.209']);
         $this->visit('/skin/nom-du-skin')
             ->see('1 install');
 
-        $this->call('POST', '/skin/install/nom-du-skin', $parameters = ['_token' => csrf_token()], $cookies = [], $files = [], $server = ['HTTP_REFERER' => 'nom-du-skin']);
+        $this->call('POST', '/skin/install/nom-du-skin', $parameters = ['_token' => csrf_token()], $cookies = [], $files = [], $server = ['HTTP_REFERER' => 'nom-du-skin', 'HTTP_CF_CONNECTING_IP' => '93.31.164.209']);
         $this->visit('/skin/nom-du-skin')
             ->see('1 install');
     }

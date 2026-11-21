@@ -205,11 +205,12 @@ class scriptsTest extends BrowserKitTestCase
             ->seePageIs('/script/nom-du-script')
             ->see('1 votes');
 
-        $this->call('GET', '/script/install/nom-du-script');
+        \Illuminate\Support\Facades\Http::fake(['proxycheck.io/*' => ['status' => 'ok', '93.31.164.209' => ['proxy' => 'no', 'type' => 'Residential']]]);
+        $this->call('GET', '/script/install/nom-du-script', [], [], [], ['HTTP_CF_CONNECTING_IP' => '93.31.164.209']);
         $this->visit('/script/nom-du-script')
             ->see('1 install');
 
-        $this->call('POST', '/script/install/nom-du-script', $parameters = ['_token' => csrf_token()], $cookies = [], $files = [], $server = ['HTTP_REFERER' => 'nom-du-script']);
+        $this->call('POST', '/script/install/nom-du-script', $parameters = ['_token' => csrf_token()], $cookies = [], $files = [], $server = ['HTTP_REFERER' => 'nom-du-script', 'HTTP_CF_CONNECTING_IP' => '93.31.164.209']);
         $this->visit('/script/nom-du-script')
             ->see('1 install');
     }

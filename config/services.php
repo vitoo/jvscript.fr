@@ -46,6 +46,11 @@ return [
         'webhook_url' => env('DISCORD_URL', ''),
     ],
 
+    'proxycheck' => [
+        'url' => 'https://proxycheck.io/v2/',
+        'key' => env('PROXYCHECK_KEY'),
+    ],
+
     'recaptcha' => [
         'key' => env('RECAPTCHA_KEY', '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'),
     ],
