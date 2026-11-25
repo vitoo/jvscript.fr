@@ -1,10 +1,9 @@
-<div class="col-xs-6 col-sm-3 col-md-3">
+<div class="col-xs-4 col-sm-3 col-md-3 card-col">
     <div class="thumbnail">
         <a href="{{route('skin.show',['slug' => $skin->slug ])}}" class="">
-            <div class="hover-caption hidden-xs">  
-                <p class="pull-left">
+            <div class="hover-caption hidden-xs">
                 <h4>{{$skin->name}}</h4>
-                <p class="pull-left">
+                <p class="card-rating">
                     <?php $note = round($skin->note * 2) / 2; ?>
                     @for ($i = 1; $i <= $note ; $i++)
                     <i class="fa fa-star" aria-hidden="true"></i>
@@ -22,7 +21,6 @@
                     @endfor
 
                 </p>
-                <p class="text-right"><i class="fa fa-download" aria-hidden="true"></i> {{$skin->install_count}} </p>
                 <?php
                 $autor = "";
                 if (null != $skin->user_id)
@@ -33,13 +31,12 @@
                 $autor = \Illuminate\Support\Str::limit($autor, 14);
                 ?>
 
-                <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
-
-                <p class="text-right">
-                    <span class=" label label-skin">Skin</span>
+                <p class="card-meta clearfix">
+                    <span class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</span>
+                    <span class="pull-right"><i class="fa fa-download" aria-hidden="true"></i> {{$skin->install_count}}</span>
                 </p>
-                <p class="desc">{{\Illuminate\Support\Str::limit($skin->description,350)}}</p>
 
+                <p class="desc">{{\Illuminate\Support\Str::limit($skin->description,350)}}</p>
             </div>
 
             <?php $src = $skin->photo_url == null ? "/assets/images/skin.svg" : $skin->photoSmall() ?>
@@ -53,7 +50,7 @@
             </div>
             <div class="caption"> 
                 <h4>{{$skin->name}}</h4>
-                <p class="pull-left">
+                <p class="card-rating">
                     <?php $note = round($skin->note * 2) / 2; ?>
                     @for ($i = 1; $i <= $note ; $i++)
                     <i class="fa fa-star" aria-hidden="true"></i>
@@ -70,12 +67,10 @@
 
                     @endfor
                 </p>
-                <p class="text-right"><i class="fa fa-download" aria-hidden="true"></i> {{$skin->install_count}} </p>
 
-                <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
-
-                <p class="text-right">
-                    <span class=" label label-skin">Skin</span>
+                <p class="card-meta clearfix">
+                    <span class="pull-left hidden-xs"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</span>
+                    <span class="pull-right"><i class="fa fa-download" aria-hidden="true"></i> {{$skin->install_count}}</span>
                 </p>
             </div>
         </a>

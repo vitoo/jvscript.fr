@@ -164,3 +164,49 @@ table.dataTable.table-condensed .sorting:after, table.dataTable.table-condensed 
         }
     }
 }
+
+/* Mobile : grille de 3 cartes compactes */
+@media (max-width: 767px) {
+    #scripts .list,
+    #nouveautes .tab-pane > .row {
+        margin-left: -4px;
+        margin-right: -4px;
+    }
+
+    .card-col {
+        padding-left: 4px;
+        padding-right: 4px;
+
+        .thumbnail {
+            margin-bottom: 8px;
+        }
+
+        .caption {
+            padding: 5px 6px;
+
+            h4 {
+                font-size: 12px;
+                margin: 0 0 3px;
+            }
+
+            p {
+                font-size: 9px;
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+
+@media (max-width: 767px) {
+    #nouveautes .nav-tabs > li > a {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+}
+
+/* Mobile : l'auteur est masqué, les installs passent sous la note */
+@media (max-width: 767px) {
+    .card-col .card-meta .pull-right {
+        float: none !important;
+    }
+}
