@@ -32,7 +32,7 @@ class homeNewsTest extends BrowserKitTestCase
 
         $newTab = $this->crawler->filter('#nouveaux-scripts')->text();
         $this->assertStringContainsString('Script tout neuf', $newTab);
-        $this->assertStringContainsString('Nouveau', $newTab);
+        $this->assertStringNotContainsString('Nouveau', $newTab);
     }
 
     public function test_les_scripts_mis_a_jour_ont_leur_onglet_sans_doublon_avec_les_nouveaux()
@@ -54,7 +54,6 @@ class homeNewsTest extends BrowserKitTestCase
         $this->assertStringContainsString('Mis à jour récemment', $this->crawler->filter('#nouveautes .nav-tabs')->text());
         $updatedTab = $this->crawler->filter('#scripts-mis-a-jour')->text();
         $this->assertStringContainsString('Vieux script mis a jour', $updatedTab);
-        $this->assertStringContainsString('MAJ', $updatedTab);
         $this->assertStringNotContainsString('Script neuf et mis a jour', $updatedTab);
         $this->assertStringContainsString('Script neuf et mis a jour', $this->crawler->filter('#nouveaux-scripts')->text());
     }
@@ -84,7 +83,7 @@ class homeNewsTest extends BrowserKitTestCase
         $this->assertStringNotContainsString('Script en serie '.(Script::HOME_NEWS_COUNT + 1), $this->crawler->filter('#nouveaux-scripts')->text());
     }
 
-    public function test_la_grille_principale_garde_tous_les_scripts_avec_badges()
+    public function test_la_grille_principale_garde_tous_les_scripts_sans_badges()
     {
         $oldScript = $this->createScript('Script ancien sans badge', [
             'created_at' => now()->subYears(3),
@@ -99,29 +98,9 @@ class homeNewsTest extends BrowserKitTestCase
 
         $oldCard = $this->crawler->filter("#scripts .list #{$oldScript->id}-script")->text();
         $this->assertStringContainsString('Script ancien sans badge', $oldCard);
-        $this->assertStringNotContainsString('Nouveau', $oldCard);
-        $this->assertStringNotContainsString('MAJ', $oldCard);
+        $this->assertCount(0, $this->crawler->filter("#scripts .list #{$oldScript->id}-script .label-info, #scripts .list #{$oldScript->id}-script .label-success"));
 
         $newCard = $this->crawler->filter("#scripts .list #{$newScript->id}-script")->text();
-        $this->assertStringContainsString('Nouveau', $newCard);
-    }
-
-    public function test_les_seuils_des_badges()
-    {
-        $script = new Script;
-
-        $script->created_at = now()->subDays(Script::NEW_BADGE_DAYS - 1);
-        $this->assertTrue($script->isNew());
-        $script->created_at = now()->subDays(Script::NEW_BADGE_DAYS + 1);
-        $this->assertFalse($script->isNew());
-        $script->created_at = null;
-        $this->assertFalse($script->isNew());
-
-        $script->last_update = now()->subDays(Script::UPDATED_BADGE_DAYS - 1);
-        $this->assertTrue($script->isRecentlyUpdated());
-        $script->last_update = now()->subDays(Script::UPDATED_BADGE_DAYS + 1);
-        $this->assertFalse($script->isRecentlyUpdated());
-        $script->last_update = null;
-        $this->assertFalse($script->isRecentlyUpdated());
+        $this->assertStringNotContainsString('Nouveau', $newCard);
     }
 }

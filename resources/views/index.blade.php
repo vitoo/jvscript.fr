@@ -55,6 +55,13 @@
         bLazy.revalidate();
     });
 
+    /**
+     * Recherche : cache les encarts "Nouveaux scripts" / "Mis à jour" pendant une recherche
+     */
+    scriptList.on('searchComplete', function (list) {
+        $('#bloc-nouveautes').toggle(!list.searched);
+    });
+
     //filter
     scriptList.on('filterComplete', function (list) {
 //        console.log("filterComplete");
@@ -118,15 +125,17 @@
 </script>
 @endsection
 
-<div class="row">
+<div id="bloc-nouveautes" @if(isset($keyword) && strlen($keyword) > 0) style="display: none;" @endif>
+    <div class="row">
 
-    @include('home.news')
+        @include('home.news')
 
+    </div>
+
+    @if($latestScripts->isNotEmpty())
+    <hr class="separation-nouveautes">
+    @endif
 </div>
-
-@if($latestScripts->isNotEmpty())
-<hr class="separation-nouveautes">
-@endif
 
 <div class="row">
     <div class="col-xs-12">

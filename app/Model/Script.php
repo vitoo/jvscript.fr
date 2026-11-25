@@ -45,28 +45,6 @@ class Script extends Model
      */
     public const HOME_NEWS_COUNT = 8;
 
-    /**
-     * Durée pendant laquelle un script ajouté porte le badge « Nouveau »
-     */
-    public const NEW_BADGE_DAYS = 30;
-
-    /**
-     * Durée pendant laquelle un script mis à jour porte le badge « MAJ »
-     */
-    public const UPDATED_BADGE_DAYS = 14;
-
-    public function isNew(): bool
-    {
-        return $this->created_at !== null
-            && $this->created_at->gte(now()->subDays(self::NEW_BADGE_DAYS));
-    }
-
-    public function isRecentlyUpdated(): bool
-    {
-        return $this->last_update !== null
-            && $this->last_update->gte(now()->subDays(self::UPDATED_BADGE_DAYS));
-    }
-
     public function getPhotoUrlAttribute($value)
     {
         if ($value) {

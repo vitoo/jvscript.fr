@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="Script">
+  <rect width="400" height="400" fill="#2e2e2e"/>
+  <g fill="none" stroke="#6e6e6e" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="140,140 80,200 140,260"/>
+    <polyline points="260,140 320,200 260,260"/>
+    <line x1="225" y1="120" x2="175" y2="280"/>
+  </g>
+</svg>

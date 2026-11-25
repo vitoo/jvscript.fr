@@ -45,7 +45,6 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
-                    @include('home.badges', ['item' => $script])
                     <span class=" label label-script">Script</span>
                 </p>
 
@@ -53,7 +52,7 @@
 
             </div>
 
-            <?php $src = $script->photo_url == null ? "/assets/images/script.jpg" : $script->photoSmall() ?>
+            <?php $src = $script->photo_url == null ? "/assets/images/script.svg" : $script->photoSmall() ?>
             <div class="image">
                 @if($lazy)
                 <img data-src="{{$src}}" class="b-lazy" alt="{{$script->name}} logo" />
@@ -95,7 +94,6 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
-                    @include('home.badges', ['item' => $script])
                     <span class=" label label-script">Script</span>
                 </p>
             </div>

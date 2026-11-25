@@ -141,3 +141,26 @@ table.dataTable.table-condensed .sorting:after, table.dataTable.table-condensed 
         margin: 0 15px;
     }
 }
+/* Onglets du bloc « Nouveautés » de la page d'accueil */
+#nouveautes .nav-tabs {
+    border-bottom-color: #3a3a3b;
+
+    > li > a {
+        color: #8a8a8a;
+        border-color: transparent;
+
+        &:hover, &:focus {
+            color: #ccc;
+            background-color: #262627;
+            border-color: #2b2b2c #2b2b2c #3a3a3b;
+        }
+    }
+
+    > li.active > a {
+        &, &:hover, &:focus {
+            color: #e0e0e0;
+            background-color: #262627;
+            border-color: #3a3a3b #3a3a3b transparent;
+        }
+    }
+}

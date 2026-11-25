@@ -36,14 +36,13 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
-                    @include('home.badges', ['item' => $skin])
                     <span class=" label label-skin">Skin</span>
                 </p>
                 <p class="desc">{{\Illuminate\Support\Str::limit($skin->description,350)}}</p>
 
             </div>
 
-            <?php $src = $skin->photo_url == null ? "/assets/images/skin.jpg" : $skin->photoSmall() ?>
+            <?php $src = $skin->photo_url == null ? "/assets/images/skin.svg" : $skin->photoSmall() ?>
             <div class="image">
                  @if($lazy)
                 <img data-src="{{$src}}" class="b-lazy" alt="{{$skin->name}} logo" /> 
@@ -76,7 +75,6 @@
                 <p class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</p>
 
                 <p class="text-right">
-                    @include('home.badges', ['item' => $skin])
                     <span class=" label label-skin">Skin</span>
                 </p>
             </div>

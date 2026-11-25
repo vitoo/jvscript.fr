@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="Skin">
+  <rect width="400" height="400" fill="#2e2e2e"/>
+  <path d="M200 95c-62 0-112 45-112 102 0 52 44 92 92 92h18c13 0 22-10 22-21 0-6-2-11-6-15-4-4-6-9-6-15 0-12 10-21 22-21h26c32 0 56-25 56-55 0-37-50-67-112-67z" fill="none" stroke="#6e6e6e" stroke-width="20" stroke-linejoin="round"/>
+  <g fill="#6e6e6e">
+    <circle cx="145" cy="190" r="16"/>
+    <circle cx="175" cy="140" r="16"/>
+    <circle cx="232" cy="135" r="16"/>
+    <circle cx="275" cy="172" r="16"/>
+  </g>
+</svg>
