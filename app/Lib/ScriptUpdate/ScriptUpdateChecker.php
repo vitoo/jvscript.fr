@@ -50,11 +50,15 @@ class ScriptUpdateChecker
             return $this->fromGithub($url, $m[1], $repo, null, $path);
         }
 
+        if (preg_match('#^https://gist\.github(?:usercontent)?\.com/[^/]+/([0-9a-f]+)/raw/(?:([0-9a-f]{40})/)?#i', $url, $m)) {
+            return $this->fromGist($url, $m[1], $m[2] ?? null);
+        }
+
         if (preg_match('#^https://codeberg\.org/([^/]+)/([^/]+)/raw/branch/([^/]+)/(.+)$#i', $url, $m)) {
             return $this->fromCodeberg($url, $m[1], $m[2], $m[3], $m[4]);
         }
 
-        if (preg_match('#^https://(?:update\.|api\.)?greasyfork\.org/(?:[a-z-]+/)?scripts/(\d+)#i', $url, $m)) {
+        if (preg_match('#^https?://(?:update\.|api\.)?greasyfork\.org/(?:[a-z-]+/)?scripts/(\d+)#i', $url, $m)) {
             return $this->fromGreasyfork($m[1]);
         }
 
@@ -67,24 +71,8 @@ class ScriptUpdateChecker
 
     private function fromGithub(string $url, string $owner, string $repo, ?string $branch, string $path): UpdateInfo
     {
-        $blockedUntil = Cache::get(self::GITHUB_BLOCKED_CACHE_KEY);
-        if ($blockedUntil && now()->lt($blockedUntil)) {
-            throw new RateLimitedException('github', Carbon::parse($blockedUntil));
-        }
-
-        $request = $this->http()->accept('application/vnd.github+json');
-        if (config('services.github.token')) {
-            $request = $request->withToken(config('services.github.token'));
-        }
-
         $query = array_filter(['path' => rawurldecode($path), 'sha' => $branch, 'per_page' => 1]);
-        $response = $request->get("https://api.github.com/repos/$owner/$repo/commits", $query);
-
-        if (in_array($response->status(), [403, 429]) && $response->header('X-RateLimit-Remaining') === '0') {
-            $retryAt = Carbon::createFromTimestamp((int) $response->header('X-RateLimit-Reset'));
-            Cache::put(self::GITHUB_BLOCKED_CACHE_KEY, $retryAt->toIso8601String(), $retryAt);
-            throw new RateLimitedException('github', $retryAt);
-        }
+        $response = $this->githubApi("repos/$owner/$repo/commits", $query);
 
         $date = $response->successful() ? $response->json('0.commit.committer.date') : null;
         $file = $this->fromFile($url, 'github');
@@ -96,6 +84,60 @@ class ScriptUpdateChecker
             contentHash: $file->contentHash,
             errors: $date ? $file->errors : ["github API {$response->status()} pour $owner/$repo/$path", ...$file->errors],
         );
+    }
+
+    /**
+     * Gist GitHub. Si l'URL fige une révision (…/raw/<sha>/fichier.js), c'est la date de cette révision
+     * qui compte : les utilisateurs installent cette version-là, pas les suivantes.
+     */
+    private function fromGist(string $url, string $id, ?string $revision): UpdateInfo
+    {
+        $response = $this->githubApi("gists/$id");
+
+        $date = null;
+        if ($response->successful()) {
+            $date = $response->json('updated_at');
+            if ($revision) {
+                $pinned = collect($response->json('history', []))->firstWhere('version', $revision);
+                $date = $pinned['committed_at'] ?? $date;
+            }
+        }
+        $file = $this->fromFile($url, 'gist');
+
+        return new UpdateInfo(
+            source: 'gist',
+            date: $date ? Carbon::parse($date) : null,
+            version: $file->version,
+            contentHash: $file->contentHash,
+            errors: $date ? $file->errors : ["github API {$response->status()} pour le gist $id", ...$file->errors],
+        );
+    }
+
+    /**
+     * Appel à l'API GitHub, avec le token s'il est configuré. Quand le quota est atteint, on le
+     * mémorise jusqu'au reset et on lève RateLimitedException, sans réessayer.
+     */
+    private function githubApi(string $endpoint, array $query = []): Response
+    {
+        $blockedUntil = Cache::get(self::GITHUB_BLOCKED_CACHE_KEY);
+        if ($blockedUntil && now()->lt($blockedUntil)) {
+            throw new RateLimitedException('github', Carbon::parse($blockedUntil));
+        }
+
+        $request = $this->http()->accept('application/vnd.github+json');
+        if (config('services.github.token')) {
+            $request = $request->withToken(config('services.github.token'));
+        }
+
+        $response = $request->get("https://api.github.com/$endpoint", $query);
+
+        if (in_array($response->status(), [403, 429]) && $response->header('X-RateLimit-Remaining') === '0') {
+            $retryAt = Carbon::createFromTimestamp((int) $response->header('X-RateLimit-Reset'));
+            Cache::put(self::GITHUB_BLOCKED_CACHE_KEY, $retryAt->toIso8601String(), $retryAt);
+            throw new RateLimitedException('github', $retryAt);
+        }
+
+        return $response;
     }
 
     private function fromCodeberg(string $url, string $owner, string $repo, string $branch, string $path): UpdateInfo

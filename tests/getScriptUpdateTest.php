@@ -164,6 +164,31 @@ class getScriptUpdateTest extends BrowserKitTestCase
         $this->assertSame('9', $oujs->fresh()->version);
     }
 
+    public function test_gist_date_de_la_revision_figee_ou_de_la_derniere_revision()
+    {
+        $pinned = $this->createScript('gist-fige', 'https://gist.github.com/someone/2f0d041a/raw/'.str_repeat('a', 40).'/script.user.js');
+        $latest = $this->createScript('gist-courant', 'https://gist.githubusercontent.com/other/9d84616b/raw/script.user.js');
+        Http::fake([
+            'api.github.com/gists/2f0d041a' => Http::response([
+                'updated_at' => '2026-04-15T19:50:58Z',
+                'history' => [
+                    ['version' => str_repeat('b', 40), 'committed_at' => '2026-04-15T19:50:58Z'],
+                    ['version' => str_repeat('a', 40), 'committed_at' => '2025-01-10T12:00:00Z'],
+                ],
+            ]),
+            'api.github.com/gists/9d84616b' => Http::response(['updated_at' => '2026-04-16T10:00:00Z', 'history' => []]),
+            'gist.github.com/*' => Http::response($this->userscript('1.0')),
+            'gist.githubusercontent.com/*' => Http::response($this->userscript('2.0')),
+        ]);
+
+        $this->artisan('get-script-update');
+
+        // l'URL fige la révision « aaa… » : c'est sa date qui compte, pas celle de la dernière révision
+        $this->assertSame('2025-01-10', $pinned->fresh()->last_update->toDateString());
+        $this->assertSame('2026-04-16', $latest->fresh()->last_update->toDateString());
+        $this->assertSame('2.0', $latest->fresh()->version);
+    }
+
     public function test_un_script_en_erreur_est_quand_meme_marque_verifie()
     {
         $script = $this->createScript('mort', 'https://example.com/disparu.user.js', ['version' => '1.0']);

@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class UpdateInfo
 {
     /**
-     * @param  string  $source  github, codeberg, greasyfork, openuserjs ou file
+     * @param  string  $source  github, gist, codeberg, greasyfork, openuserjs ou file
      * @param  Carbon|null  $date  date de dernière modification donnée par la source (commit, API…)
      * @param  string|null  $version  @version du script
      * @param  string|null  $contentHash  sha256 du fichier .user.js, quand on l'a téléchargé
