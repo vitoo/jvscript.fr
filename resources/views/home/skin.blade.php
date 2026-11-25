@@ -31,7 +31,7 @@
                 $autor = \Illuminate\Support\Str::limit($autor, 14);
                 ?>
 
-                <p class="card-meta clearfix">
+                <p class="card-meta">
                     <span class="pull-left"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</span>
                     <span class="pull-right"><i class="fa fa-download" aria-hidden="true"></i> {{$skin->install_count}}</span>
                 </p>
@@ -68,7 +68,7 @@
                     @endfor
                 </p>
 
-                <p class="card-meta clearfix">
+                <p class="card-meta">
                     <span class="pull-left hidden-xs"><i class="fa fa-user" aria-hidden="true"></i> {{$autor}}</span>
                     <span class="pull-right"><i class="fa fa-download" aria-hidden="true"></i> {{$skin->install_count}}</span>
                 </p>

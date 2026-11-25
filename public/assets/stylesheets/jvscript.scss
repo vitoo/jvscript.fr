@@ -176,6 +176,7 @@ table.dataTable.table-condensed .sorting:after, table.dataTable.table-condensed 
     .card-col {
         padding-left: 4px;
         padding-right: 4px;
+        text-align: left; /* #scripts est centré sur mobile pour les filtres, pas pour les cartes */
 
         .thumbnail {
             margin-bottom: 8px;
@@ -204,9 +205,165 @@ table.dataTable.table-condensed .sorting:after, table.dataTable.table-condensed 
     }
 }
 
-/* Mobile : l'auteur est masqué, les installs passent sous la note */
-@media (max-width: 767px) {
-    .card-col .card-meta .pull-right {
+/* Ligne auteur / installs : toujours sur une seule ligne pour garder des cartes de même hauteur
+   (la grille est en float, une carte plus haute décale toutes les suivantes) */
+.card-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    white-space: nowrap;
+
+    > span {
         float: none !important;
+    }
+
+    > span:first-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    > span:last-child {
+        flex-shrink: 0;
+    }
+}
+
+/* Tablette (768-991px) : logo + recherche + menu doivent tenir sur une ligne */
+@media (min-width: 768px) and (max-width: 991px) {
+    .navbar-nav > li > a {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    #search-navbar {
+        width: 150px;
+    }
+}
+
+/* Fiche script / skin */
+.item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px 20px;
+    padding: 10px 0 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #313131;
+
+    h1 {
+        margin: 0;
+        font-size: 32px;
+        word-break: break-word;
+    }
+
+    .item-version {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        background: #3a3a3b;
+        color: #bbb;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .item-byline {
+        margin: 6px 0 0;
+        color: #8a8a8a;
+    }
+
+    .item-install {
+        padding: 8px 18px;
+        font-size: 15px;
+        white-space: nowrap;
+    }
+}
+
+.item-card {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #262627;
+    border: 1px solid #2b2b2c;
+
+    h4 {
+        margin-top: 0;
+        color: #ddd;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    /* le bloc commentaires a déjà son propre panel : on le fond dans la carte */
+    #comments > .panel-body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border-top: 0;
+        box-shadow: none;
+    }
+}
+
+.item-image {
+    text-align: center;
+
+    img {
+        max-width: 100%;
+        max-height: 420px;
+    }
+}
+
+.item-desc {
+    line-height: 1.6;
+    word-wrap: break-word;
+
+    img {
+        max-width: 100%;
+    }
+}
+
+.item-infos .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #2f2f30;
+
+    &:first-child { padding-top: 0; }
+    &:last-child { padding-bottom: 0; border-bottom: 0; }
+}
+
+.item-infos .info-key,
+.item-infos .info-muted {
+    color: #8a8a8a;
+}
+
+.item-infos .info-stars {
+    white-space: nowrap;
+}
+
+.item-links a {
+    display: block;
+    margin: 0 -10px;
+    padding: 8px 10px;
+    border-radius: 3px;
+    color: #ccc;
+
+    &:hover {
+        background: #2e2e2f;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    i {
+        width: 20px;
+        color: #8a8a8a;
+    }
+}
+
+@media (max-width: 767px) {
+    .item-header h1 {
+        font-size: 24px;
     }
 }
