@@ -130,6 +130,14 @@
     </div>
 
     <script src="/js/all.js"></script>
+    <script>
+        // bootstrap-confirmation en français, pour toutes les pages
+        $.extend($.fn.confirmation.Constructor.DEFAULTS, {
+            title: 'Êtes-vous sûr ?',
+            btnOkLabel: 'Oui',
+            btnCancelLabel: 'Non'
+        });
+    </script>
 
 
     @yield('javascript')

@@ -367,3 +367,37 @@ table.dataTable.table-condensed .sorting:after, table.dataTable.table-condensed 
         font-size: 24px;
     }
 }
+
+/* Bouton d'action principal aux couleurs du logo (texte sombre pour ne pas ressembler à btn-warning) */
+.btn-accent {
+    color: #1e1e1f;
+    background-color: #cb931c;
+    border-color: transparent;
+
+    &:hover, &:focus, &:active {
+        color: #1e1e1f;
+        background-color: #dca73a;
+    }
+}
+
+/* Popovers (dont la confirmation de suppression) en thème sombre */
+.popover {
+    background-color: #2b2b2c;
+    border-color: #3a3a3b;
+    color: #ddd;
+}
+
+.popover-title {
+    background-color: #333334;
+    border-bottom-color: #3a3a3b;
+    color: #e0e0e0;
+}
+
+.popover.top > .arrow { border-top-color: #3a3a3b; }
+.popover.top > .arrow:after { border-top-color: #2b2b2c; }
+.popover.bottom > .arrow { border-bottom-color: #3a3a3b; }
+.popover.bottom > .arrow:after { border-bottom-color: #333334; }
+.popover.left > .arrow { border-left-color: #3a3a3b; }
+.popover.left > .arrow:after { border-left-color: #2b2b2c; }
+.popover.right > .arrow { border-right-color: #3a3a3b; }
+.popover.right > .arrow:after { border-right-color: #2b2b2c; }

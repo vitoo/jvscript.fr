@@ -27,12 +27,12 @@ $authorName = null != $script->user_id ? $script->user()->first()->name : $scrip
     </div>
 
     @if($item == 'skin')
-    <a target="_blank" class="btn btn-primary item-install" href="{{route('skin.install',$script->slug)}}" onclick="document.getElementById('install').submit(); return false;"><i class="fa fa-download"></i> Installer</a>
+    <a target="_blank" class="btn btn-accent item-install" href="{{route('skin.install',$script->slug)}}" onclick="document.getElementById('install').submit(); return false;"><i class="fa fa-download"></i> Installer</a>
     <form id="install" action="{{route('skin.install',$script->slug)}}" target="_blank" method="POST" style="display: none;">
         {{ csrf_field() }}
     </form>
     @else
-    <a target="_blank" class="btn btn-primary item-install" href="{{route('script.install',$script->slug)}}"><i class="fa fa-download"></i> Installer</a>
+    <a target="_blank" class="btn btn-accent item-install" href="{{route('script.install',$script->slug)}}"><i class="fa fa-download"></i> Installer</a>
     @endif
 </div>
 
