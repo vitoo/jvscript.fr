@@ -11,6 +11,4 @@ Homestead.yaml
 .env
 .php_cs.cache
 .history
-Envoy.blade.php
-Makefile
 *.cache
