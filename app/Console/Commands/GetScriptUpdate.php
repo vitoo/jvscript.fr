@@ -2,216 +2,149 @@
 
 namespace App\Console\Commands;
 
+use App\Lib\ScriptUpdate\RateLimitedException;
+use App\Lib\ScriptUpdate\ScriptUpdateChecker;
+use App\Lib\ScriptUpdate\UpdateInfo;
 use App\Model\Script;
-use GuzzleHttp\Client;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Met à jour la date de dernière MAJ (last_update) et la version des scripts validés.
+ *
+ * Lancée toutes les heures : chaque passage ne traite que les --limit scripts vérifiés il y a le plus
+ * longtemps (et pas depuis moins d'un jour), pour étaler les appels et rester sous les quotas (GitHub).
+ */
 class GetScriptUpdate extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'get-script-update';
+    protected $signature = 'get-script-update
+        {--slug= : vérifier un seul script, même vérifié récemment}
+        {--limit=25 : nombre maximum de scripts vérifiés par passage}
+        {--all : ignorer le délai de 24h entre deux vérifications}
+        {--dry-run : afficher ce qui changerait sans rien enregistrer}';
+
+    protected $description = 'Met à jour la date de MAJ et la version des scripts depuis leur hébergeur';
 
     /**
-     * The console command description.
-     *
-     * @var string
+     * Un Last-Modified plus vieux que ça au moment où le contenu change n'est pas crédible
+     * (serveur qui renvoie une date fixe) : on prend alors la date du jour.
      */
-    protected $description = 'Update script';
+    private const LAST_MODIFIED_MAX_AGE_DAYS = 2;
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function handle(ScriptUpdateChecker $checker): int
     {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle()
-    {
-        $this->crawlInfo();
-
-        return 0;
-    }
-
-    private function crawlInfo()
-    {
-        $scripts = Script::where('status', 1)
-            // ->where('slug', 'jvc-imageviewer')
-            ->where('updated_at', '<', \Carbon\Carbon::now()->subDay())
-            ->orderBy('updated_at', 'asc')
-            ->get();
-
-        foreach ($scripts as $script) {
-            $this->info('Script : ' . $script->name);
-            $error = false;
-            $newDate = null;
-
-            // transform github blob url to raw
-            $pattern = '/(https:\/\/github\.com\/[^\/]+\/[^\/]+)\/blob\/(.+)/';
-            if (preg_match($pattern, $script->js_url)) {
-                $replacement = '$1/raw/$2';
-                $raw_url = preg_replace($pattern, $replacement, $script->js_url);
-                $script->js_url = $raw_url;
-                $script->save();
-                $this->warn('fixed : ' . $raw_url);
+        $query = Script::where('status', 1);
+        if ($slug = $this->option('slug')) {
+            $query->where('slug', $slug);
+        } else {
+            if (! $this->option('all')) {
+                $query->where('updated_at', '<', now()->subDay());
             }
-
-            if (
-                preg_match('#https://github\.com/([^/]+)/([^/]+)/raw/(?:refs/heads/)?([^/]+)/(.+\.js)#i', $script->js_url, $match)
-                || preg_match('#https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/(?:refs/heads/)?([^/]+)/(.+\.js)#i', $script->js_url, $match)
-            ) {
-                $owner = $match[1];
-                $repo = $match[2];
-                $branch = $match[3];
-                $file_path = $match[4];
-                // replace space by %20 in file path
-                $file_path = str_replace(' ', '%20', $file_path);
-                // replace + by %2B in file path
-                $file_path = str_replace('+', '%2B', $file_path);
-                $url_crawl = "https://github.com/$owner/$repo/raw/$branch/$file_path";
-                $api_url = "https://api.github.com/repos/$owner/$repo/commits?path=$file_path&sha=$branch";
-
-                $client = new Client;
-                $headers = [
-                    'Authorization: Bearer ' . config('services.github.token'),
-                    'User-Agent: My-GitHub-App',  // GitHub requires a user-agent string
-                ];
-                try {
-                    $response = $client->request('GET', $api_url, ['headers' => $headers]);
-                    if ($response->getStatusCode() == 200) {
-                        $commits = json_decode($response->getBody()->getContents(), true);
-                        if (! empty($commits) && isset($commits[0]['commit']['committer']['date'])) {
-                            $date = $commits[0]['commit']['committer']['date'];
-                            $newDate = \Carbon\Carbon::parse($date);
-                            // TODO: front : update il y a XX mois ou XX jours
-                        } else {
-                            $this->error('fail github get date : ' . $script->js_url . " |  $api_url");
-                            // die;
-                        }
-                    }
-                } catch (\Exception $ex) {
-                    $this->error('fail: Could not fetch data from GitHub API | ' . $api_url . ' ' . $ex->getMessage());
-                    $error = true;
-                    // die;
-                }
-            } elseif (preg_match('/https:\/\/(.*)\.github\.io\/(.*)\/(.*)\.js/i', $script->js_url, $match)) {
-                // GITHUB PAGES
-                $url_crawl = "https://github.com/$match[1]/$match[2]/blob/master/$match[3].js";
-                $crawl_content = @file_get_contents($url_crawl);
-                if (preg_match('/<relative-time datetime="(.*Z)">/i', $crawl_content, $match_date)) {
-                    $date = $match_date[1];
-                    $newDate = \Carbon\Carbon::parse($date);
-                } else {
-                    $this->error('fail date : ' . $script->js_url . " | $url_crawl");
-                    $error = true;
-                    // die;
-                }
-            } elseif (preg_match('/https:\/\/openuserjs\.org\/install\/(.*)\/(.*)\.user\.js/i', $script->js_url, $match) || preg_match('/https:\/\/openuserjs\.org\/src\/scripts\/(.*)\/(.*)\.user\.js/i', $script->js_url, $match)) {
-                $url_crawl = "https://openuserjs.org/scripts/$match[1]/$match[2]";
-                // remove .min at the end of url
-                $url_crawl = str_replace('.min', '', $url_crawl);
-
-                $crawl_content = @file_get_contents($url_crawl);
-                if (preg_match('/<time class="script-updated" datetime="(.*Z)" title=/i', $crawl_content, $match_date)) {
-                    $date = $match_date[1];
-                    $newDate = \Carbon\Carbon::parse($date);
-                } elseif (preg_match('/<b>Published:<\/b> <time datetime="(.*Z)"/i', $crawl_content, $match_date)) {
-                    $date = $match_date[1];
-                    $newDate = \Carbon\Carbon::parse($date);
-                } else {
-                    $this->error('fail date : ' . $script->js_url . " | $url_crawl");
-                    $error = true;
-                    // die;
-                }
-                // get version openuserjs in same page
-                if (preg_match('/<code>([0-9.]+).*<\/code>/i', $crawl_content, $match)) {
-                    $script->update(['version' => strip_tags($match[1])]);
-                }
-            } elseif (preg_match('/https:\/\/(?:update\.)?greasyfork\.org\/scripts\/([^\/]+)(?:\/code)?\/(.*)\.user\.js/i', $script->js_url, $match)) {
-                $url_crawl = "https://greasyfork.org/fr/scripts/$match[1]";
-                $crawl_content = @file_get_contents($url_crawl);
-                if (preg_match('/script-show-updated-date.* datetime="(.*)" prefix="/i', $crawl_content, $match_date)) {
-                    $date = $match_date[1];
-                    $newDate = \Carbon\Carbon::parse($date);
-                } else {
-                    $this->error('fail date : ' . $script->js_url . " | $url_crawl");
-                    $error = true;
-                    // die;
-                }
-            }
-
-            if (
-                $newDate &&
-                $newDate->toDateString() != ($script->last_update !== null ? $script->last_update->toDateString() : null)
-            ) {
-                $this->warn("date changed : $script->last_update => $newDate");
-                $script->update(['last_update' => $newDate]);
-            }
-
-            // ===GET  VERSION===
-            $url_crawl = $script->js_url;
-
-            if (! \Illuminate\Support\Str::contains($url_crawl, 'openuserjs')) {
-                $client = new Client;
-                try {
-                    $response = $client->request('GET', $url_crawl);
-                    $content = $response->getBody()->getContents();
-                    if (preg_match('/\/\/\s*@version\s+([\d\.\w\-_]+)/i', $content, $match_date)) {
-                        $version = $match_date[1];
-                        $script->update(['version' => $version]);
-                        if ($script->wasCHanged()) {
-                            $this->info("version updated : $version");
-                            if ($script->last_update === null) {
-                                $script->update(['last_update' => \Carbon\Carbon::now()]);
-                                $this->warn("version changed but last_update is null : $version");
-                            }
-                        }
-                    } else {
-                        $this->error('fail version : ' . $script->js_url);
-                        Log::error('fail version : ' . $script->name . ' | ' . $script->js_url);
-                        $error = true;
-                        // die;
-                    }
-                } catch (\Exception $ex) {
-                    $this->error('fail: Could not fetch data  | ' . $url_crawl . ' ' . $ex->getMessage());
-                    // Log::error("Could not fetch data  | " . $url_crawl . " " .  $ex->getMessage());
-                    $error = true;
-                    // die;
-                }
-            }
-            if (! $error) {
-                $script->touch();
-            }
-            $this->info('');
+            $query->orderBy('updated_at')
+                ->limit((int) $this->option('limit'));
         }
 
-        // update skin date
-        // $scripts = Skin::where("status", 1)->orderBy('last_update', 'asc')->get();
-        // foreach ($scripts as $script) {
-        //     $url_crawl = $script->skin_url;
-        //     $crawl_content = @file_get_contents($url_crawl);
-        //     if (preg_match('/<th>Updated<\/th>\n\s*<td>(.*)<\/td>/i', $crawl_content, $match_date)) {
-        //         $date = $match_date[1];
-        //         $date = \Carbon\Carbon::parse($date);
-        //         $script->last_update = $date;
-        //         $script->save();
-        //         echo $script->js_url . "|$url_crawl|$date\n";
-        //     } else {
-        //         echo "fail : " . $script->js_url . " | $url_crawl\n";
-        //         die;
-        //     }
-        // }
+        foreach ($query->get() as $script) {
+            $this->checkScript($checker, $script);
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function checkScript(ScriptUpdateChecker $checker, Script $script): void
+    {
+        $dryRun = $this->option('dry-run');
+        $this->line("<info>{$script->name}</info> <comment>{$script->js_url}</comment>");
+
+        $normalized = ScriptUpdateChecker::normalizeUrl($script->js_url);
+        if ($normalized !== $script->js_url) {
+            $this->warn("  url corrigée : $normalized");
+            $script->js_url = $normalized;
+        }
+
+        try {
+            $info = $checker->check($script);
+        } catch (RateLimitedException $e) {
+            // pas de touch() : le script sera repris au prochain passage après le reset du quota
+            $this->warn("  ignoré : quota {$e->source} atteint jusqu'à {$e->retryAt}");
+
+            return;
+        } catch (\Throwable $e) {
+            $info = new UpdateInfo(source: 'error', errors: [$e->getMessage()]);
+        }
+
+        foreach ($info->errors as $error) {
+            $this->error("  $error");
+            Log::warning("get-script-update {$script->slug} : $error");
+        }
+
+        $versionChanged = $info->version !== null && $info->version !== $script->version;
+        $contentChanged = $info->contentHash !== null && $script->content_hash !== null && $info->contentHash !== $script->content_hash;
+        $newDate = $this->newDate($script, $info, $versionChanged, $contentChanged);
+
+        if ($versionChanged) {
+            $this->warn("  version : {$script->version} => {$info->version}");
+            $script->version = $info->version;
+        }
+        if ($newDate) {
+            $this->warn("  last_update : {$script->last_update} => $newDate");
+            $script->last_update = $newDate;
+        }
+        if ($info->contentHash) {
+            $script->content_hash = $info->contentHash;
+        }
+
+        if ($dryRun) {
+            return;
+        }
+
+        // on enregistre même en cas d'erreur : updated_at sert de « dernière vérification »,
+        // sinon un script en erreur serait réinterrogé à chaque passage
+        $script->updated_at = now();
+        $script->save();
+    }
+
+    /**
+     * La nouvelle last_update, ou null si elle ne change pas.
+     */
+    private function newDate(Script $script, UpdateInfo $info, bool $versionChanged, bool $contentChanged): ?Carbon
+    {
+        $current = $script->last_update;
+
+        // hébergeur avec une vraie date (commit, API) : elle fait foi
+        if ($info->hasReliableDate()) {
+            $date = $info->date->copy()->setTimezone(config('app.timezone'));
+
+            return $current === null || $this->isDifferentDay($date, $current) ? $date : null;
+        }
+
+        // simple fichier : on ne sait que s'il a changé
+        $candidate = null;
+        if ($contentChanged || $versionChanged) {
+            $recent = $info->lastModified && $info->lastModified->gt(now()->subDays(self::LAST_MODIFIED_MAX_AGE_DAYS));
+            $candidate = $recent ? $info->lastModified->copy()->setTimezone(config('app.timezone')) : now();
+        } elseif ($script->content_hash === null && $info->lastModified && $info->lastModified->lt(now()->subHour())) {
+            // premier passage depuis l'ajout de content_hash : le Last-Modified du serveur est le meilleur indice
+            // (sauf s'il vaut « maintenant » : page générée à la volée, comme pastebin)
+            $candidate = $info->lastModified->copy()->setTimezone(config('app.timezone'));
+        }
+
+        // un simple fichier ne fait jamais reculer la date
+        if ($candidate === null || ($current !== null && ($candidate->lte($current) || ! $this->isDifferentDay($candidate, $current)))) {
+            return null;
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Les dates existantes ont été enregistrées avec des fuseaux incohérents (UTC sans conversion,
+     * colonne timestamp convertie par MySQL) : on ignore les écarts de moins de 12h pour ne pas
+     * réécrire des dates qui n'ont en fait pas changé.
+     */
+    private function isDifferentDay(Carbon $date, Carbon $current): bool
+    {
+        return ! $date->isSameDay($current) && abs($date->diffInHours($current)) >= 12;
     }
 }

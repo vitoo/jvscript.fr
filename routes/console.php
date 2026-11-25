@@ -19,4 +19,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->describe('Display an inspiring quote');
 
-Schedule::command('get-script-update')->hourly();
+Schedule::command('get-script-update')->hourly()->withoutOverlapping();
