@@ -13,6 +13,7 @@ use App\Model\User;
 use App\Notifications\notifyStatus;
 use Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 
 class ScriptController extends Controller
@@ -108,6 +109,10 @@ class ScriptController extends Controller
 
         $script->save();
 
+        if ($script->wasChanged('js_url')) {
+            $this->checkUpdateAfterResponse($script);
+        }
+
         return redirect(route('script.show', ['slug' => $slug]));
     }
 
@@ -122,9 +127,26 @@ class ScriptController extends Controller
             if ($item->poster_user_id != null) {
                 $item->poster_user()->first()->notify(new notifyStatus($item));
             }
+            $this->checkUpdateAfterResponse($item);
         }
 
         return redirect(route($this->modelName.'.show', ['slug' => $slug]));
+    }
+
+    /**
+     * Récupère tout de suite la date de MAJ et la version d'un script (nouvelle URL, script tout juste validé)
+     * au lieu d'attendre le passage horaire de get-script-update. Lancé après l'envoi de la réponse :
+     * l'utilisateur n'attend pas les appels à GitHub / Greasyfork.
+     */
+    protected function checkUpdateAfterResponse(Script $item): void
+    {
+        // la commande ne gère que les scripts validés (pas les skins)
+        if ($this->modelName !== 'script' || $item->status != 1) {
+            return;
+        }
+
+        $slug = $item->slug;
+        defer(fn () => rescue(fn () => Artisan::call('get-script-update', ['--slug' => $slug])));
     }
 
     public function refuse($slug)
